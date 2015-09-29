@@ -9,7 +9,7 @@
 
 
 window.addEventListener("load", initialize);
-var correlation_worker = new Worker("correlation_worker.js");
+var correlation_worker = new Worker("js/correlation_worker.js");
 correlation_worker.addEventListener("message", interpret_correlation_result);
 
 
