@@ -1,12 +1,16 @@
 
+
+
 window.addEventListener("load", initialize);
 var correlation_worker = new Worker("correlation_worker.js");
 correlation_worker.addEventListener("message", interpret_correlation_result);
+console.log("inne i use_stream");
 
+window.alert(halle);
 
 
 //variable declarations
-var fft_size = 2048;
+var fft_size = 2048;	
 var frequency_buffer = new Float32Array(fft_size);
 
 
@@ -25,7 +29,7 @@ function initialize(){
 
 
 //input parameter stream since it's the microphone
-function use_stream(stream){
+function use_stream (stream){
 
 	
 	var audio_context = new AudioContext();
@@ -34,13 +38,19 @@ function use_stream(stream){
 	
 	//creates an analyzer node
 	var analyzer = audio_context.createAnalyzer();
+	var gain_node = audio_context.createGain();
+
+	gain_node.gain.value = 2;
 
 
 	analyzer.fftSize = fft_size;
 
-
-	analyzer.connect(audio_context.destination);
 	mic.connect(analyzer);
+	analyzer.connect(gain_node);
+	gain_node.connect(audio_context.destination);
+
+
+
 
 
 }
