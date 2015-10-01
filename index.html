@@ -27,6 +27,7 @@
 		test_frequencies = test_frequencies.concat([ just_below, note, just_above ]);
 	}
 
+console.log(note_frequency);
 
 
 	window.addEventListener("load", initialize);
@@ -54,33 +55,30 @@
 	function use_stream (stream){
 
 		console.log("inne i use_stream");
+		analyser.fftSize = fft_size;
 
-		var mic = audio_context.createMediaStreamSource(stream);
-		//creates a node with a mediastream representing the microphone 
-		
-		//creates an analyzer node
-		
+		var mic = audio_context.createMediaStreamSource(stream);		
 		var gain_node = audio_context.createGain();
-		var buffer = new Float32Array(fft_size);
+		var bufferLength = analyser.fftSize;
+		var buffer = new Float32Array(bufferLength);
 
 		gain_node.gain.value = 0;
 
-
-		analyser.fftSize = 2048;
-
-		mic.connect(analyser);
 		analyser.connect(gain_node);
 		gain_node.connect(audio_context.destination);
-
-
+		mic.connect(analyser);
+		
 		//load in buffer
 		analyser.getFloatTimeDomainData(buffer);
+		console.log(buffer);
 
 		correlation_worker.postMessage({
 
 			"timeseries": buffer, "test_frequencies": test_frequencies, "sample_rate": audio_context.sampleRate
 
 		});
+
+
 
 
 	}
@@ -95,8 +93,33 @@
 		var frequency_amplitudes = event.data.frequency_amplitudes;
 
 
-		//fill up buffer with data from getFloatTimeDomain(the wave with values between one and minus one)
-		analyser.getFloatTimeDomainData(frequency_buffer);
+		// Compute the (squared) magnitudes of the complex amplitudes for each
+		// test frequency.
+		var magnitudes = frequency_amplitudes.map(function(z) { return z[0] * z[0] + z[1] * z[1]; });
+
+		// Find the maximum in the list of magnitudes.
+		var maximum_index = -1;
+		var maximum_magnitude = 0;
+		for (var i = 0; i < magnitudes.length; i++)
+		{
+			if (magnitudes[i] <= maximum_magnitude)
+				continue;
+			maximum_index = i;
+			maximum_magnitude = magnitudes[i];
+		}
+
+		// Compute the average magnitude. We'll only pay attention to frequencies
+		// with magnitudes significantly above average.
+		var average = magnitudes.reduce(function(a, b) { return a + b; }, 0) / magnitudes.length;
+		var confidence = maximum_magnitude / average;
+		var confidence_threshold = 10; // empirical, arbitrary.
+		if (confidence > confidence_threshold)
+		{
+			var dominant_frequency = test_frequencies[maximum_index];
+			document.getElementById("note-name").textContent = dominant_frequency.name;
+			document.getElementById("frequency").textContent = dominant_frequency.frequency;
+		}
+
 
 
 
