@@ -66,8 +66,9 @@ console.log(note_frequency);
 
 		analyser.connect(gain_node);
 		gain_node.connect(audio_context.destination);
+
 		mic.connect(analyser);
-		
+
 		//load in buffer
 		analyser.getFloatTimeDomainData(buffer);
 		console.log(buffer);
@@ -77,9 +78,6 @@ console.log(note_frequency);
 			"timeseries": buffer, "test_frequencies": test_frequencies, "sample_rate": audio_context.sampleRate
 
 		});
-
-
-
 
 	}
 
@@ -132,10 +130,6 @@ console.log(note_frequency);
 <body>
 
 	<h1> Welcome to our awesome G-Tuner </h1>
-
-
-
-	
 
 	<script src="js\g_tuner.js"> </script>
 	
