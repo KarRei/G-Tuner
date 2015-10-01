@@ -1,20 +1,12 @@
 <!DOCTYPE html>
 <html>
-
 <head> 
-	<link rel="stylesheet" href="css\stylesheet.css">
-</head>
+	<link rel="stylesheet" href="stylesheet.css">
+
 <script type="text/javascript">
-
-
-
 window.addEventListener("load", initialize);
 var correlation_worker = new Worker("js/correlation_worker.js");
 correlation_worker.addEventListener("message", interpret_correlation_result);
-
-
-
-
 
 //variable declarations
 var fft_size = 2048;	
@@ -23,25 +15,16 @@ var frequency_buffer = new Float32Array(fft_size);
 
 //initialize access to microphone 
 function initialize(){
-
-
-
-
 	var getMicrophone = navigator.getUserMedia;
 	getMicrophone = getMicrophone || navigator. webkitGetUserMedia || navigator. mozGetUserMedia;
 	//moz for firefox and webkit for crome and others 
 
 	getMicrophone.call(navigator, {"audio": true}, use_stream, function() {});
-
-	
-
 }
 
 
 //input parameter stream since it's the microphone
 function use_stream (stream){
-
-	
 	var audio_context = new AudioContext();
 	var mic = audio_context.createMediaStreamSource(stream);
 	//creates a node with a mediastream representing the microphone 
@@ -58,10 +41,6 @@ function use_stream (stream){
 	mic.connect(analyser);
 	analyser.connect(gain_node);
 	gain_node.connect(audio_context.destination);
-
-
-
-
 
 }
 
@@ -86,16 +65,14 @@ console.log("inne i interpret");
 
 
 </script>
-
+</head>
 <body>
 
+	<div class = "header">
 	<h1> Welcome to our awesome G-Tuner </h1>
-
-
+	</div> 
 
 	
-
-	<script src="js\g_tuner.js"> </script>
 	
 </body>
 
