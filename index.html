@@ -5,26 +5,39 @@
 	<link rel="stylesheet" href="css\stylesheet.css">
 	<script type="text/javascript">
 
-	console.log("Hej");
+
+	console.log("first");
+
+	//variable declarations
+	var fft_size = 2048;	
+	var frequency_buffer = new Float32Array(fft_size);
+	var audio_context = new AudioContext();
+	var analyser = audio_context.createAnalyser();
+
+	var C2 = 65.41; // C2 note, in Hz.
+	var notes = [ "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" ];
+	var test_frequencies = [];
+	for (var i = 0; i < 30; i++)
+	{
+		var note_frequency = C2 * Math.pow(2, i / 12);
+		var note_name = notes[i % 12];
+		var note = { "frequency": note_frequency, "name": note_name };
+		var just_above = { "frequency": note_frequency * Math.pow(2, 1 / 48), "name": note_name + " (a bit sharp)" };
+		var just_below = { "frequency": note_frequency * Math.pow(2, -1 / 48), "name": note_name + " (a bit flat)" };
+		test_frequencies = test_frequencies.concat([ just_below, note, just_above ]);
+	}
+
+
 
 	window.addEventListener("load", initialize);
 	var correlation_worker = new Worker("correlation_worker.js");
 	correlation_worker.addEventListener("message", interpret_correlation_result);
 
 
-
-
-
-	//variable declarations
-	var fft_size = 2048;	
-	var frequency_buffer = new Float32Array(fft_size);
-
-
 	//initialize access to microphone 
 	function initialize(){
 
-
-
+		console.log("inne i initialize");
 
 		var getMicrophone = navigator.getUserMedia;
 		getMicrophone = getMicrophone || navigator. webkitGetUserMedia || navigator. mozGetUserMedia;
@@ -32,22 +45,23 @@
 
 		getMicrophone.call(navigator, {"audio": true}, use_stream, function() {});
 
-		
-
 	}
+
+
 
 
 	//input parameter stream since it's the microphone
 	function use_stream (stream){
 
-		
-		var audio_context = new AudioContext();
+		console.log("inne i use_stream");
+
 		var mic = audio_context.createMediaStreamSource(stream);
 		//creates a node with a mediastream representing the microphone 
 		
 		//creates an analyzer node
-		var analyser = audio_context.createAnalyser();
+		
 		var gain_node = audio_context.createGain();
+		var buffer = new Float32Array(fft_size);
 
 		gain_node.gain.value = 0;
 
@@ -58,28 +72,34 @@
 		analyser.connect(gain_node);
 		gain_node.connect(audio_context.destination);
 
+		//load in buffer
+		analyser.getFloatTimeDomainData(buffer);
+
+		correlation_worker.postMessage({
+
+			"timeseries": buffer, "test_frequencies": test_frequencies, "sample_rate": audio_context.sampleRate
+
+		});
 
 	}
 
-	function interpret_correlation_result ( event ) {
+
+
+	function interpret_correlation_result (event) {
 
 	console.log("inne i interpret");
 
-		//reach timeseries (periods)
-		var period = event.data.period;
+		var timeseries = event.data.timeseries;
 		var frequency_amplitudes = event.data.frequency_amplitudes;
-		var searchSize = fft_size*0.5;
+
 
 		//fill up buffer with data from getFloatTimeDomain(the wave with values between one and minus one)
 		analyser.getFloatTimeDomainData(frequency_buffer);
 
 
 
-		//compute the squared magnitudes of the comples amplitudes for each test freq. 
-		var magnitudes = frequency_amplitudes.map(function(z){return z[0] * z[0] + z[1] * z[1]; })
 
-	}
-
+	}	
 
 	</script>
 </head>
