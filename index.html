@@ -70,19 +70,8 @@ console.log(note_frequency);
 	
 		//load in buffer
 
-
 		loop();
-
-
-/*
-			 var rms = 0;
-	  for (var i = 0; i < buffer.length; i++) {
-	    	rms = buffer[i];
-	    }
-	  console.log("buffers first value ", rms);
-*/
-
-		
+	
 
 	}
 
@@ -137,6 +126,7 @@ console.log(note_frequency);
 			document.getElementById("note-name").textContent = dominant_frequency.name;
 			document.getElementById("frequency").textContent = dominant_frequency.frequency;
 		}
+		setTimeout(loop, 250);
 
 	}	
 
