@@ -6,18 +6,41 @@
 	<link rel="stylesheet" href="stylesheet.css">
 	<link rel="stylesheet" href="font-awesome/css/font-awesome.min.css" type="text/css">
 	<script type="text/javascript">
+	//Projekt G-Tunder
+
+	console.log("first");
+
+	//variable declarations
+	var fft_size = 2048;	
+	var frequency_buffer = new Float32Array(fft_size);
+	var audio_context = new AudioContext();
+	var analyser = audio_context.createAnalyser();
+
+	var C2 = 65.41; // C2 note, in Hz.
+	var notes = [ "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" ];
+	var test_frequencies = [];
+	for (var i = 0; i < 30; i++)
+	{
+		var note_frequency = C2 * Math.pow(2, i / 12);
+		var note_name = notes[i % 12];
+		var note = { "frequency": note_frequency, "name": note_name };
+		var just_above = { "frequency": note_frequency * Math.pow(2, 1 / 48), "name": note_name + " (a bit sharp)" };
+		var just_below = { "frequency": note_frequency * Math.pow(2, -1 / 48), "name": note_name + " (a bit flat)" };
+		test_frequencies = test_frequencies.concat([ just_below, note, just_above ]);
+	}
+
+console.log(note_frequency);
+
 
 	window.addEventListener("load", initialize);
 	var correlation_worker = new Worker("correlation_worker.js");
 	correlation_worker.addEventListener("message", interpret_correlation_result);
 
-	//variable declarations
-	var fft_size = 2048;	
-	var frequency_buffer = new Float32Array(fft_size);
-
 
 	//initialize access to microphone 
 	function initialize(){
+
+		console.log("inne i initialize");
 
 		var getMicrophone = navigator.getUserMedia;
 		getMicrophone = getMicrophone || navigator. webkitGetUserMedia || navigator. mozGetUserMedia;
@@ -28,85 +51,88 @@
 	}
 
 
+
+
 	//input parameter stream since it's the microphone
 	function use_stream (stream){
 
-		var audio_context = new AudioContext();
+		console.log("inne i use_stream");
+		analyser.fftSize = fft_size;
+
 		var mic = audio_context.createMediaStreamSource(stream);
-		//creates a node with a mediastream representing the microphone 
-		
-		//creates an analyzer node
-		var analyser = audio_context.createAnalyser();
 		var gain_node = audio_context.createGain();
+		
 
 		gain_node.gain.value = 0;
-
-
-		analyser.fftSize = 2048;
 
 		mic.connect(analyser);
 		analyser.connect(gain_node);
 		gain_node.connect(audio_context.destination);
 
+	
+		//load in buffer
+
+		loop();
+	
+
 	}
 
-	function interpret_correlation_result ( event ) {
+	function loop(){
+
+		var buffer = new Float32Array(analyser.fftSize);
+		analyser.getFloatTimeDomainData(buffer);
+		console.log(buffer);
+
+
+		correlation_worker.postMessage({
+
+			"timeseries": Array.prototype.slice.call(buffer), "test_frequencies": test_frequencies, "sample_rate": audio_context.sampleRate
+
+		});
+
+	}
+
+
+
+	function interpret_correlation_result (event) {
 
 	console.log("inne i interpret");
 
-		//reach timeseries (periods)
-		var period = event.data.period;
+		var timeseries = event.data.timeseries;
 		var frequency_amplitudes = event.data.frequency_amplitudes;
-		var searchSize = fft_size*0.5;
 
-		//fill up buffer with data from getFloatTimeDomain(the wave with values between one and minus one)
-		analyser.getFloatTimeDomainData(frequency_buffer);
 
-		//compute the squared magnitudes of the comples amplitudes for each test freq. 
-		var magnitudes = frequency_amplitudes.map(function(z){return z[0] * z[0] + z[1] * z[1]; })
-	}
-	</script>
-</head>
+		// Compute the (squared) magnitudes of the complex amplitudes for each
+		// test frequency.
+		var magnitudes = frequency_amplitudes.map(function(z) { return z[0] * z[0] + z[1] * z[1]; });
 
-<body>
+		// Find the maximum in the list of magnitudes.
+		var maximum_index = -1;
+		var maximum_magnitude = 0;
+		for (var i = 0; i < magnitudes.length; i++)
+		{
+			if (magnitudes[i] <= maximum_magnitude)
+				continue;
+			maximum_index = i;
+			maximum_magnitude = magnitudes[i];
+		}
 
-	<div class ="col-12">
-	<p id = "title"> GUITAR TUNER  <sub><i class="fa fa-music"></i></sub></p>
-	<hr class = "default">
-	<p id = "about"> 
-	A Guitar Tuner made for the course TFYA65 at Linköping University <br>
-	Made by Kristin Bäck, Karin Reidarman, Sara Martin.
-	</p>
-	
-	<p id = "tones"> </p>
+		// Compute the average magnitude. We'll only pay attention to frequencies
+		// with magnitudes significantly above average.
+		var average = magnitudes.reduce(function(a, b) { return a + b; }, 0) / magnitudes.length;
+		var confidence = maximum_magnitude / average;
+		var confidence_threshold = 10; // empirical, arbitrary.
+		if (confidence > confidence_threshold)
+		{
+			var dominant_frequency = test_frequencies[maximum_index];
+			document.getElementById("note-name").textContent = dominant_frequency.name;
+			document.getElementById("frequency").textContent = dominant_frequency.frequency;
+		}
+		setTimeout(loop, 250);
 
-	<div class ="col-4 down">
-	<i id = "icon-down" class="fa fa-3x fa-chevron-down text-default"></i>
-	</div>
-	<div class ="col-4">
-	<canvas id = "myCanvas" width = "100" height = "100"> 
-	</canvas> 
-	</div>
-	<div class ="col-4 up">
-	<i id = "icon-up" class="fa fa-3x fa-chevron-up text-default"></i> 
-	</div>
+	}	
 
-	<br>
-	
-	<button onclick="currentTone(0, 10)">E</button>
-	<button onclick="currentTone(1, 20)">A</button>
-	<button onclick="currentTone(2, 10)">D</button>
-	<button onclick="currentTone(3)">G</button>
-	<button onclick="currentTone(4)">B</button>
-	<button onclick="currentTone(5)">E</button>
-	
-	<p id = "about"> Current Frequency: </p>
-	<p id ="currFreq"> </p>
 
-	</div>
-
-	<!-- Script part of UI -->
-	<script>
 	var tones = ["E", "A", "D", "G", "B", "E"];
 	var text = "";
 	var i;
@@ -146,6 +172,41 @@
 		document.getElementById("currFreq").innerHTML = tone;
 		
 	}
+	</script>
+</head>
+
+<body>
+
+	<div class ="col-12">
+	<p id = "title"> GUITAR TUNER  <sub><i class="fa fa-music"></i></sub></p>
+	<hr class = "default">
+	<p id = "about"> 
+	A Guitar Tuner made for the course TFYA65 at Linköping University <br>
+	Made by Kristin Bäck, Karin Reidarman, Sara Martin.
+	</p>
+	
+	<p id = "tones"> </p>
+
+	<div class ="col-4 down">
+	<i id = "icon-down" class="fa fa-3x fa-chevron-down text-default"></i>
+	</div>
+	<div class ="col-4">
+	<canvas id = "myCanvas" width = "100" height = "100"> 
+	</canvas> 
+	</div>
+	<div class ="col-4 up">
+	<i id = "icon-up" class="fa fa-3x fa-chevron-up text-default"></i> 
+	</div>
+
+	<br>
+	<p id = "about"> Current Frequency: </p>
+	<p id ="currFreq"> </p>
+
+	</div>
+
+	<!-- Script part of UI -->
+	<script>
+	
 	</script>
 	
 </body>

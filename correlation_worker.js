@@ -1,14 +1,19 @@
 self.onmessage = function(event)
 {
+	console.log("inne i on_messagre");
 	var timeseries = event.data.timeseries;
+	//console.log(timeseries);
 	var test_frequencies = event.data.test_frequencies;
 	var sample_rate = event.data.sample_rate;
 	var amplitudes = compute_correlations(timeseries, test_frequencies, sample_rate);
 	self.postMessage({ "timeseries": timeseries, "frequency_amplitudes": amplitudes });
+
+	//console.log(amplitudes);
 };
 
 function compute_correlations(timeseries, test_frequencies, sample_rate)
 {
+	console.log("inne i compute_correlations");
 	// 2pi * frequency gives the appropriate period to sine.
 	// timeseries index / sample_rate gives the appropriate time coordinate.
 	var scale_factor = 2 * Math.PI / sample_rate;
