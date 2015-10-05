@@ -4,7 +4,7 @@
 	<meta charset="utf-8"/>
 	<link rel="stylesheet" href="css\stylesheet.css">
 	<script type="text/javascript">
-
+	//Projekt G-Tunder
 
 	console.log("first");
 
@@ -60,23 +60,43 @@
 
 		var mic = audio_context.createMediaStreamSource(stream);		
 		var gain_node = audio_context.createGain();
-		var bufferLength = analyser.fftSize;
-		var buffer = new Float32Array(bufferLength);
+		
 
 		gain_node.gain.value = 0;
 
+		mic.connect(analyser);
 		analyser.connect(gain_node);
 		gain_node.connect(audio_context.destination);
 
-		mic.connect(analyser);
-
+	
 		//load in buffer
+
+
+		loop();
+
+
+/*
+			 var rms = 0;
+	  for (var i = 0; i < buffer.length; i++) {
+	    	rms = buffer[i];
+	    }
+	  console.log("buffers first value ", rms);
+*/
+
+		
+
+	}
+
+	function loop(){
+
+		var buffer = new Float32Array(analyser.fftSize);
 		analyser.getFloatTimeDomainData(buffer);
 		console.log(buffer);
 
+
 		correlation_worker.postMessage({
 
-			"timeseries": buffer, "test_frequencies": test_frequencies, "sample_rate": audio_context.sampleRate
+			"timeseries": Array.prototype.slice.call(buffer), "test_frequencies": test_frequencies, "sample_rate": audio_context.sampleRate
 
 		});
 
@@ -118,10 +138,6 @@
 			document.getElementById("note-name").textContent = dominant_frequency.name;
 			document.getElementById("frequency").textContent = dominant_frequency.frequency;
 		}
-
-
-
-
 
 	}	
 
