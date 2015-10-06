@@ -6,35 +6,34 @@
 	<link rel="stylesheet" href="stylesheet.css">
 	<link rel="stylesheet" href="font-awesome/css/font-awesome.min.css" type="text/css">
 	<script type="text/javascript">
-	//Projekt G-Tunder
-
-	console.log("first");
 
 	//variable declarations
-	var fft_size = 2048;	
-	var frequency_buffer = new Float32Array(fft_size);
+	var fft_size = 2048;	//om vi ökar fftSize till 4096 bli det bättre beräkningar (får upp låga frekvenser) eller långsammare?
+
+	//skapar vår context och dess noder
 	var audio_context = new AudioContext();
 	var analyser = audio_context.createAnalyser();
+	var gain_node = audio_context.createGain();
 
 	var C2 = 65.41; // C2 note, in Hz.
 	var notes = [ "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" ];
 	var test_frequencies = [];
+
+	//för varje not skapas en frekvens där noten faktiskt ska va, en frekvens där den säger att den är för låg, och en frekvens där den är för hög. dessa tre frekvenser för varje ton läggs i arrayen test_frequencies i sorterad ordning.
 	for (var i = 0; i < 30; i++)
 	{
-		var note_frequency = C2 * Math.pow(2, i / 12);
-		var note_name = notes[i % 12];
-		var note = { "frequency": note_frequency, "name": note_name };
-		var just_above = { "frequency": note_frequency * Math.pow(2, 1 / 48), "name": note_name + " (a bit sharp)" };
+		var note_frequency = C2 * Math.pow(2, i / 12); //dess riktiga frekvenser
+		var note_name = notes[i % 12];	//tillhörande namn från notes-arrayen
+		var note = { "frequency": note_frequency, "name": note_name }; //skapar ett objekt
+		var just_above = { "frequency": note_frequency * Math.pow(2, 1 / 48), "name": note_name + " (a bit sharp)" }; //den för höga frekvensen är riktiga frekvensen gånger 2^(1/48)
 		var just_below = { "frequency": note_frequency * Math.pow(2, -1 / 48), "name": note_name + " (a bit flat)" };
 		test_frequencies = test_frequencies.concat([ just_below, note, just_above ]);
 	}
 
-console.log(note_frequency);
 
-
-	window.addEventListener("load", initialize);
+	window.addEventListener("load", initialize); //när load (sidan öppnar) så sätts initialize funktionen igåg
 	var correlation_worker = new Worker("correlation_worker.js");
-	correlation_worker.addEventListener("message", interpret_correlation_result);
+	correlation_worker.addEventListener("message", interpret_correlation_result); //när message kommer från correlation_worker.js så sätts interpret_correlation_result igång
 
 
 	//initialize access to microphone 
@@ -44,8 +43,9 @@ console.log(note_frequency);
 
 		var getMicrophone = navigator.getUserMedia;
 		getMicrophone = getMicrophone || navigator. webkitGetUserMedia || navigator. mozGetUserMedia;
-		//moz for firefox and webkit for crome and others 
+		//moz for firefox and webkit for crome and others
 
+		// vi vill bara ha tillgång till ljudet och om tillåts så vill vi köra funktionen use_stream.
 		getMicrophone.call(navigator, {"audio": true}, use_stream, function() {});
 
 	}
@@ -60,30 +60,25 @@ console.log(note_frequency);
 		analyser.fftSize = fft_size;
 
 		var mic = audio_context.createMediaStreamSource(stream);
-		var gain_node = audio_context.createGain();
-		
 
 		gain_node.gain.value = 0;
 
+		//kopplar noderna i contexten till varandra och sedan ut.
 		mic.connect(analyser);
 		analyser.connect(gain_node);
 		gain_node.connect(audio_context.destination);
 
-	
-		//load in buffer
-
 		loop();
-	
 
 	}
 
 	function loop(){
 
-		var buffer = new Float32Array(analyser.fftSize);
-		analyser.getFloatTimeDomainData(buffer);
+		var buffer = new Float32Array(analyser.fftSize); 
+		analyser.getFloatTimeDomainData(buffer); //fyller buffern med våg-datan från ljudet som kommer in i analys-noden
 		console.log(buffer);
 
-
+		//skickar message till correlation_worker
 		correlation_worker.postMessage({
 
 			"timeseries": Array.prototype.slice.call(buffer), "test_frequencies": test_frequencies, "sample_rate": audio_context.sampleRate
@@ -98,40 +93,51 @@ console.log(note_frequency);
 
 	console.log("inne i interpret");
 
-		var timeseries = event.data.timeseries;
-		var frequency_amplitudes = event.data.frequency_amplitudes;
+		var timeseries = event.data.timeseries; //fortfarande vår mic-ljud-kurva som värden i en array
+		var frequency_amplitudes = event.data.frequency_amplitudes; //array med amplituderna(likheten) mellan micljudet och varje testfrekvens
 
 
 		// Compute the (squared) magnitudes of the complex amplitudes for each
 		// test frequency.
+		//räknar om frequency_amplitudes från [re, im]-objekt till ett valigt tal, typ, och sparar i
+		//array magnitudes
 		var magnitudes = frequency_amplitudes.map(function(z) { return z[0] * z[0] + z[1] * z[1]; });
 
 		// Find the maximum in the list of magnitudes.
-		var maximum_index = -1;
-		var maximum_magnitude = 0;
+		var maximum_index = -1; //bara ett värde liksom, finns ingen plats i en array som har -1
+		var maximum_magnitude = 0; // också ett värde som kommer bytas ut
 		for (var i = 0; i < magnitudes.length; i++)
 		{
-			if (magnitudes[i] <= maximum_magnitude)
+			//om skillnaden är mindre än max så fortsätt jämför(nästa itteration)
+			if (magnitudes[i] <= maximum_magnitude) 
 				continue;
+			//annars har vi hittat ett nytt max och dess plats i magnitudes-arrayen(och även test-frekvens-arrayen)
 			maximum_index = i;
 			maximum_magnitude = magnitudes[i];
 		}
 
 		// Compute the average magnitude. We'll only pay attention to frequencies
 		// with magnitudes significantly above average.
+
+		// "The reduce() method applies a function against an accumulator and each value of the array (from left-to-right) to reduce it to a single value." Lägger alltså ihop alla värden i arrayen och delar på arrayens längs, som man räknar ut meddelvärde i allmännhet.
 		var average = magnitudes.reduce(function(a, b) { return a + b; }, 0) / magnitudes.length;
+		
+		//confidence, som i att vi är säkra på att denna magnitude står ut från meddelvärdet eftersom vi bara vill ha de frekvenser vi är säkra på.
 		var confidence = maximum_magnitude / average;
 		var confidence_threshold = 10; // empirical, arbitrary.
+		//om vi är säkra så hittar vi rätt plats i test-frekvens-arrayen och hämtar dess objekt attribut
 		if (confidence > confidence_threshold)
 		{
 			var dominant_frequency = test_frequencies[maximum_index];
 			document.getElementById("note-name").textContent = dominant_frequency.name;
 			document.getElementById("frequency").textContent = dominant_frequency.frequency;
 		}
-		setTimeout(loop, 250);
+
+		setTimeout(loop, 250); //efter 250 millisekunder tar vi upp ett nytt mic-sljud-sample (dvs 4ggr i sekunden)
 
 	}	
 
+	//HÄR SLUTAR KODEN FÖR CORRELATIONBERÄKNINKARNA (och det därtill)
 
 	var tones = ["E", "A", "D", "G", "B", "E"];
 	var text = "";
