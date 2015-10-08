@@ -139,6 +139,8 @@
 			document.getElementById("frequency").textContent = dominant_frequency.frequency;
 		}
 
+		setTimeout(loop, 250);
+
 	}	
 
 	</script>
@@ -147,6 +149,12 @@
 <body>
 
 	<h1> Welcome to our awesome G-Tuner </h1>
+	<h1 id="note-name"></h1>
+	<h1 id="note-name"></h1>
+	<p>
+		<span>frequency (Hz):</span>
+		<span id="frequency"></span>
+	</p>
 
 	<script src="js\g_tuner.js"> </script>
 	
