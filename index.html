@@ -124,90 +124,52 @@ console.log(note_frequency);
 		var confidence_threshold = 10; // empirical, arbitrary.
 		if (confidence > confidence_threshold)
 		{
+			console.log("inne i confidence");
 			var dominant_frequency = test_frequencies[maximum_index];
-			document.getElementById("note-name").textContent = dominant_frequency.name;
-			document.getElementById("frequency").textContent = dominant_frequency.frequency;
+			setData(dominant_frequency.name, dominant_frequency.frequency);
 		}
 		setTimeout(loop, 250);
 
 	}	
 
 
-	var tones = ["E", "A", "D", "G", "B", "E"];
-	var text = "";
-	var i;
-	for(i = 0; i < 6; i++)
+	function setData(namn, freq)
 	{
-		text += tones[i] + " ";
-	}
-
 	var c = document.getElementById("myCanvas");
 	var ctx = c.getContext("2d");
 	ctx.font = "40px Arial";
 	ctx.fillStyle = "#FF4719";
 
-	
-	function currentTone(tone, freq) 
-	{
-		document.getElementById("icon-up").style.color = "#a9a9a9";
-		document.getElementById("icon-down").style.color = "#a9a9a9";
-		if(freq > 10)
-		{
-			document.getElementById("icon-up").style.color = "#313131";
-		}
-		else
-		{
-			document.getElementById("icon-down").style.color = "#313131";
-		}
-		for(var i = 0; i < 6; i++)
-		{
-			if(tone == i)
-			{
-				ctx.clearRect(0, 0, 100, c.height);
-				ctx.fillText(tones[i], 36, 60);
-				break;
-			}
-		}
+	ctx.clearRect(0, 0, 300, c.height);
+	ctx.fillText(namn, 36, 60);
 
-		document.getElementById("currFreq").innerHTML = tone;
-		
+	document.getElementById("currFreq").innerHTML = freq;
 	}
+	
+	
 	</script>
 </head>
 
 <body>
-
-	<div class ="col-12">
 	<p id = "title"> GUITAR TUNER  <sub><i class="fa fa-music"></i></sub></p>
 	<hr class = "default">
 	<p id = "about"> 
 	A Guitar Tuner made for the course TFYA65 at Linköping University <br>
-	Made by Kristin Bäck, Karin Reidarman, Sara Martin.
+	Made by Kristin Bäck, Karin Reidarman, Sara Martin
 	</p>
-	
-	<p id = "tones"> </p>
+	<i id = "icon-down" class="fa fa-1x fa-caret-left text-default"></i>
+	<i id = "icon-down" class="fa fa-2x fa-caret-left text-default"></i>
+	<i id = "icon-down" class="fa fa-3x fa-caret-left text-default"></i>
 
-	<div class ="col-4 down">
-	<i id = "icon-down" class="fa fa-3x fa-chevron-down text-default"></i>
-	</div>
-	<div class ="col-4">
-	<canvas id = "myCanvas" width = "100" height = "100"> 
+	<canvas id = "myCanvas" width = "300" height = "100"> 
 	</canvas> 
-	</div>
-	<div class ="col-4 up">
-	<i id = "icon-up" class="fa fa-3x fa-chevron-up text-default"></i> 
-	</div>
-
+	<i id = "icon-up" class="fa fa-3x fa-caret-right text-default"></i> 
+	<i id = "icon-up" class="fa fa-2x fa-caret-right text-default"></i> 
+	<i id = "icon-up" class="fa fa-1x fa-caret-right text-default"></i> 
 	<br>
 	<p id = "about"> Current Frequency: </p>
 	<p id ="currFreq"> </p>
 
-	</div>
-
-	<!-- Script part of UI -->
-	<script>
-	
-	</script>
 	
 </body>
 
