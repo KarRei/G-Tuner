@@ -1,11 +1,11 @@
 self.onmessage = function(event)
 {
-	console.log("inne i on_messagre");
+	console.log("inne i on_message");
 	var timeseries = event.data.timeseries; //buffern med vågdatat
 	//console.log(timeseries);
 	var test_frequencies = event.data.test_frequencies; //testfrekvenserna just under, note, just over
 	var sample_rate = event.data.sample_rate; //AudioContext samplar med 48000Hz
-	var amplitudes = compute_correlations(timeseries, test_frequencies, sample_rate); //en array med objekt enlikt [re, im], får värderna från funktionen compute_correlation
+	var amplitudes = compute_correlations(timeseries, test_frequencies, sample_rate); //en array med objekt enligt [re, im], får värdena från funktionen compute_correlation
 	self.postMessage({ "timeseries": timeseries, "frequency_amplitudes": amplitudes }); //startar .addEventListner(.. interpret_cor...)
 
 	//console.log(amplitudes);
