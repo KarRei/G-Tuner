@@ -117,10 +117,9 @@
 
 		// Compute the average magnitude. We'll only pay attention to frequencies
 		// with magnitudes significantly above average.
-
 		// "The reduce() method applies a function against an accumulator and each value of the array (from left-to-right) to reduce it to a single value." Lägger alltså ihop alla värden i arrayen och delar på arrayens längs, som man räknar ut meddelvärde i allmännhet.
 		var average = magnitudes.reduce(function(a, b) { return a + b; }, 0) / magnitudes.length;
-		
+
 		//confidence, som i att vi är säkra på att denna magnitude står ut från meddelvärdet eftersom vi bara vill ha de frekvenser vi är säkra på.
 		var confidence = maximum_magnitude / average;
 		var confidence_threshold = 10; // empirical, arbitrary.
@@ -129,7 +128,9 @@
 		{
 			console.log("inne i confidence");
 			var dominant_frequency = test_frequencies[maximum_index];
+
 			setData(dominant_frequency.name, dominant_frequency.frequency);
+
 		}
 
 		setTimeout(loop, 250); //efter 250 millisekunder tar vi upp ett nytt mic-sljud-sample (dvs 4ggr i sekunden)
@@ -149,6 +150,8 @@
 	ctx.fillText(namn, 36, 60);
 
 	document.getElementById("currFreq").innerHTML = freq;
+
+	
 	}
 	
 	
@@ -160,23 +163,22 @@
 	<hr class = "default">
 	<p id = "about"> 
 	A Guitar Tuner made for the course TFYA65 at Linköping University <br>
-	Made by Kristin Bäck, Karin Reidarman, Sara Martin
+	
 	</p>
-	<i id = "icon-down" class="fa fa-2x fa-caret-left text-default"></i>
-	<i id = "icon-down" class="fa fa-3x fa-caret-left text-default"></i>
-	<i id = "icon-down" class="fa fa-4x fa-caret-left text-default"></i>
 
-	<canvas id = "myCanvas" width = "300" height = "100"> 
-	</canvas> 
-	<i id = "icon-up" class="fa fa-4x fa-caret-right text-default"></i> 
-	<i id = "icon-up" class="fa fa-3x fa-caret-right text-default"></i> 
-	<i id = "icon-up" class="fa fa-2x fa-caret-right text-default"></i> 
+	<canvas id = "myCanvas" width = "350" height = "100"> 
+	</canvas>  
 	<br>
 	<p id = "about"> Current Frequency: </p>
 	<p id ="currFreq"> </p>
 
 	
 </body>
+
+<footer>
+
+	<p>Made by Kristin Bäck, Karin Reidarman, Sara Martin</p>	
+	</footer>
 
 </html>
 
